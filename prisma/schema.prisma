@@ -1,0 +1,229 @@
+// VB Fuerza — Prisma Schema (PostgreSQL / Supabase)
+// Production-ready schema for beach volleyball strength training app
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("athlete") // admin | coach | athlete
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  athleteProfile AthleteProfile?
+  coachPlans     TrainingPlan[]  @relation("CoachPlans")
+  sessions       Session[]       @relation("NextAuthSessions")
+}
+
+// NextAuth Sessions
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation("NextAuthSessions", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// ATHLETE
+// ─────────────────────────────────────────────
+
+model AthleteProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName      String
+  gender        String   // male | female
+  category      String   // U18 | U19 | U21 | adult
+  birthDate     DateTime?
+  bodyWeightKg  Float    @default(70.0)
+  position      String   @default("attacker") // attacker | defender
+  // 1RM stored as JSON: {"squat": 100, "deadlift": 120, "press": 70, "bench": 90}
+  oneRmRecords  String   @default("{}")
+  photoUrl      String?
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  plans         TrainingPlan[]
+  loadLogs      LoadLog[]
+}
+
+// ─────────────────────────────────────────────
+// TRAINING PLAN
+// ─────────────────────────────────────────────
+
+model TrainingPlan {
+  id              String   @id @default(cuid())
+  athleteId       String
+  athlete         AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  coachId         String
+  coach           User     @relation("CoachPlans", fields: [coachId], references: [id])
+
+  name            String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  competitionDate DateTime?
+  status          String   @default("draft") // draft | active | completed | archived
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  mesocycles      Mesocycle[]
+}
+
+// ─────────────────────────────────────────────
+// MESOCYCLE — Core ATR Entity
+// ─────────────────────────────────────────────
+
+model Mesocycle {
+  id              String   @id @default(cuid())
+  planId          String
+  plan            TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  atrPhase        String   // accumulation | transformation | realization
+  orderIndex      Int
+  durationWeeks   Int      @default(4)
+  primaryGoal     String?
+  // JSON: {"min": 65, "max": 75}
+  intensityRange  String   @default("{\"min\":65,\"max\":75}")
+  // JSON: {"min": 4, "max": 5}
+  volumeSetsRange String   @default("{\"min\":4,\"max\":5}")
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  sessions        TrainingSession[]
+}
+
+// ─────────────────────────────────────────────
+// SESSION
+// ─────────────────────────────────────────────
+
+model TrainingSession {
+  id                   String    @id @default(cuid())
+  mesocycleId          String
+  mesocycle            Mesocycle @relation(fields: [mesocycleId], references: [id], onDelete: Cascade)
+
+  weekNumber           Int
+  dayOfWeek            String    // monday | tuesday | ... | sunday
+  sessionType          String    @default("strength") // strength | power | maintenance | testing | recovery
+  estimatedDurationMin Int       @default(60)
+  notes                String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  exercises            SessionExercise[]
+}
+
+// ─────────────────────────────────────────────
+// EXERCISE CATALOG
+// ─────────────────────────────────────────────
+
+model Exercise {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  nameEn       String?
+  // JSON array: ["quadriceps", "glutes", "core"]
+  muscleGroups String   @default("[]")
+  equipment    String   @default("barbell") // barbell | dumbbell | bodyweight | machine | band | cable | kettlebell | medicine_ball | box
+  imageUrl     String?
+  videoUrl     String?
+  difficulty   String   @default("intermediate") // beginner | intermediate | advanced
+  sportSpecific Boolean @default(false)
+  description  String?
+  cues         String?
+
+  // ── ATR Classification ──────────────────────────────────────────
+  // compound | olympic | ballistic | plyometric_low | plyometric_high | transfer | accessory
+  exerciseType     String  @default("compound")
+  // JSON: ["accumulation"] | ["transformation"] | ["realization"] | ["accumulation","transformation"]
+  atrPhases        String  @default("[\"accumulation\"]")
+  // none | low | medium | high
+  impactLevel      String  @default("none")
+  // For contrast/complex training pairing
+  contrastPairName String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  // Relations
+  sessionExercises SessionExercise[]
+}
+
+// ─────────────────────────────────────────────
+// SESSION EXERCISE (pivot with load params)
+// ─────────────────────────────────────────────
+
+model SessionExercise {
+  id              String          @id @default(cuid())
+  sessionId       String
+  session         TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseId      String
+  exercise        Exercise        @relation(fields: [exerciseId], references: [id])
+
+  orderIndex      Int             @default(1)
+  sets            Int             @default(3)
+  repsScheme      String          @default("3x8") // e.g. "4x6", "3x8-10", "5x3"
+  intensityPctRm  Float?          // % of 1RM
+  loadKg          Float?          // auto-calculated or manual override
+  restSeconds     Int             @default(120)
+  tempo           String?         // e.g. "3-1-1-0"
+  rpeTarget       Int?            // 1-10
+  notes           String?
+  isContrast      Boolean         @default(false) // part of a contrast pair
+  contrastGroupId String?         // groups contrast pairs together
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  loadLogs        LoadLog[]
+}
+
+// ─────────────────────────────────────────────
+// LOAD LOG — Daily monitoring
+// ─────────────────────────────────────────────
+
+model LoadLog {
+  id                  String          @id @default(cuid())
+  sessionExerciseId   String
+  sessionExercise     SessionExercise @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
+  athleteId           String
+  athlete             AthleteProfile  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  date                DateTime        @default(now())
+  actualSets          Int?
+  // JSON: [6, 6, 5, 5] — reps per set
+  actualReps          String?
+  actualLoadKg        Float?
+  rpeActual           Int?            // 1-10 perceived exertion
+  readinessScore      Int?            // 1-10 (fatigue, sleep, stress)
+  notes               String?
+
+  createdAt           DateTime        @default(now())
+}
