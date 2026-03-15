@@ -52,3 +52,5 @@ Please make sure your database server is running at `db.pzkpndzudqltryejppeu.sup
  Ô£ô Compiled in 63ms (133 modules)
    Reload env: .env
  Ô£ô Compiled in 469ms (604 modules)
+   Reload env: .env
+ Ô£ô Compiled in 142ms (590 modules)
