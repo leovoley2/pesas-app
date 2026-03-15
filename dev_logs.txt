@@ -1,0 +1,52 @@
+﻿
+> app-pesas-voleibol@1.0.0 dev
+> next dev
+
+  Ôû▓ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ Ô£ô Starting...
+ Ô£ô Ready in 1952ms
+ Ô£ô Compiled /middleware in 174ms (133 modules)
+ Ôùï Compiling /login ...
+ Ô£ô Compiled /login in 1568ms (471 modules)
+ GET /login 200 in 1870ms
+ Ô£ô Compiled in 321ms (244 modules)
+ Ô£ô Compiled /api/auth/[...nextauth] in 291ms (377 modules)
+ GET /api/auth/providers 200 in 826ms
+ GET /api/auth/csrf 200 in 18ms
+Authorize called with email: coach@vbfuerza.com
+prisma:error 
+Invalid `prisma.user.findUnique()` invocation:
+
+
+Can't reach database server at `db.pzkpndzudqltryejppeu.supabase.co:5432`
+
+Please make sure your database server is running at `db.pzkpndzudqltryejppeu.supabase.co:5432`.
+ POST /api/auth/callback/credentials? 200 in 47ms
+ GET /api/auth/providers 200 in 18ms
+ GET /api/auth/csrf 200 in 12ms
+Authorize called with email: coach@vbfuerza.com
+prisma:error 
+Invalid `prisma.user.findUnique()` invocation:
+
+
+Can't reach database server at `db.pzkpndzudqltryejppeu.supabase.co:5432`
+
+Please make sure your database server is running at `db.pzkpndzudqltryejppeu.supabase.co:5432`.
+ POST /api/auth/callback/credentials? 200 in 28ms
+ GET /login 200 in 80ms
+ GET /api/auth/providers 200 in 22ms
+ GET /api/auth/csrf 200 in 16ms
+Authorize called with email: coach@vbfuerza.com
+prisma:error 
+Invalid `prisma.user.findUnique()` invocation:
+
+
+Can't reach database server at `db.pzkpndzudqltryejppeu.supabase.co:5432`
+
+Please make sure your database server is running at `db.pzkpndzudqltryejppeu.supabase.co:5432`.
+ POST /api/auth/callback/credentials? 200 in 31ms
+ Ô£ô Compiled in 300ms (360 modules)
+ Ô£ô Compiled in 63ms (133 modules)

@@ -6,8 +6,9 @@ import bcrypt from 'bcryptjs';
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
     secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-    session: { strategy: 'jwt' },
+    session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
     pages: { signIn: '/login' },
+    debug: process.env.NODE_ENV === 'development',
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
@@ -32,22 +33,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 password: { label: 'Password', type: 'password' },
             },
             async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) return null;
+                console.log('Authorize called with email:', credentials?.email);
+                try {
+                    if (!credentials?.email || !credentials?.password) {
+                        console.log('Missing credentials');
+                        return null;
+                    }
 
-                const user = await prisma.user.findUnique({
-                    where: { email: credentials.email as string },
-                });
+                    const user = await prisma.user.findUnique({
+                        where: { email: credentials.email as string },
+                    });
 
-                if (!user) return null;
+                    if (!user) {
+                        console.log('User not found in DB');
+                        return null;
+                    }
 
-                const isValid = await bcrypt.compare(
-                    credentials.password as string,
-                    user.password
-                );
+                    const isValid = await bcrypt.compare(
+                        credentials.password as string,
+                        user.password
+                    );
 
-                if (!isValid) return null;
+                    if (!isValid) {
+                        console.log('Invalid password');
+                        return null;
+                    }
 
-                return { id: user.id, email: user.email, name: user.name, role: user.role };
+                    console.log('Login successful for:', user.email);
+                    return { id: user.id, email: user.email, name: user.name, role: user.role };
+                } catch (error) {
+                    console.error('Error in authorize function:', error);
+                    return null;
+                }
             },
         }),
     ],
