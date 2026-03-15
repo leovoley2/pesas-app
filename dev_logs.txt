@@ -50,3 +50,5 @@ Please make sure your database server is running at `db.pzkpndzudqltryejppeu.sup
  POST /api/auth/callback/credentials? 200 in 31ms
  Ô£ô Compiled in 300ms (360 modules)
  Ô£ô Compiled in 63ms (133 modules)
+   Reload env: .env
+ Ô£ô Compiled in 469ms (604 modules)
